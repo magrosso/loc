@@ -1,6 +1,20 @@
 from enum import Enum
-from functools import partial, partialmethod
 from typing import Self
+
+
+# type 	ControlType
+# control 	ControlType
+# id 	AutomationId
+# regex 	RegexName
+# subname 	SubName
+# index 	foundIndex (int)
+# offset 	offset coordinates (x (int), y (int)) from control center
+# executable 	target window by its executable name
+# handle 	target window handle (int)
+# desktop 	SPECIAL target desktop, no value for the key e.g. desktop:desktop and name:Calculator
+# process 	NOT YET SUPPORTED target window by its executable's process id
+# depth 	searchDepth (int) for finding Control (default 8)
+# path 	target element by its index-based path traversal (e.g. path:2|3|8|2)
 
 
 class LocKey(Enum):
@@ -8,6 +22,7 @@ class LocKey(Enum):
     CLASS = "class"
     TYPE = "type"
     NAME = "name"
+    OFFSET = "offset"
 
     def __str__(self) -> str:
         return self.value
@@ -27,25 +42,13 @@ class Loc:
         AND = "and"
         PARENT = ">"
 
-    def __init__(self, key: LocKey = LocKey.ID, val: str | ControlType = "") -> None:
+    def __init__(self, key: LocKey, val: str | ControlType) -> None:
         # empty values or values with space characters must be quoted!
         if isinstance(val, ControlType):
             val = val.value
         else:
             val = f'"{val}"' if " " in val or not val else val
         self.loc: str = f"{key}:{val}"
-
-    @classmethod
-    def button(cls) -> Self:
-        return cls(LocKey.TYPE, ControlType.BUTTON)
-
-    @classmethod
-    def edit(cls) -> Self:
-        return cls(LocKey.TYPE, ControlType.EDIT)
-
-    @classmethod
-    def combobox(cls) -> Self:
-        return cls(LocKey.TYPE, ControlType.COMBO_BOX)
 
     def __add__(self, rhs: Self) -> Self:
         self.loc = f"{self.loc} {Loc.Op.AND.value} {rhs}"
@@ -61,30 +64,50 @@ class Loc:
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.key}, {self.val})"
 
+    # predefind locator objects
+    @classmethod
+    def type(cls, val: str) -> Self:
+        return cls(LocKey.TYPE, val)
 
-# create Locator objects with TYPE KEY
-LocType = partial(Loc, key=LocKey.TYPE)
+    @classmethod
+    def button(cls) -> Self:
+        return cls(LocKey.TYPE, ControlType.BUTTON)
+
+    @classmethod
+    def edit(cls) -> Self:
+        return cls(LocKey.TYPE, ControlType.EDIT)
+
+    @classmethod
+    def combobox(cls) -> Self:
+        return cls(LocKey.TYPE, ControlType.COMBO_BOX)
+
+    @classmethod
+    def id(cls, val: str) -> Self:
+        return cls(LocKey.ID, val)
+
+    @classmethod
+    def cls(cls, val: str) -> Self:
+        return cls(LocKey.CLASS, val)
+
+    @classmethod
+    def name(cls, val: str) -> Self:
+        return cls(LocKey.NAME, val)
+
+    @classmethod
+    def offset(cls, val: str) -> Self:
+        return cls(LocKey.OFFSET, val)
 
 
 class Locator(Enum):
-    LOC_1 = Loc(LocKey.ID, " 1 ") + Loc(LocKey.NAME, "")
-    LOC_2 = Loc(LocKey.ID, "ID 4")
-    LOC_3 = (
-        Loc(LocKey.ID, "ID 1")
-        + Loc(LocKey.CLASS, "CLASS 2")
-        + Loc(LocKey.NAME, "NAME 3")
-    )
-    LOC_4 = LocType(val=ControlType.BUTTON) + Loc(LocKey.CLASS, "CLASS 332") + Loc(
-        LocKey.NAME, "NAME-4"
-    ) > Loc(LocKey.ID, "_id_")
-    LOC_5 = LocType(val=ControlType.COMBO_BOX)
-    LOC_6 = LocType(val=ControlType.BUTTON) + Loc(LocKey.ID, "U")
-    LOC_7 = LocType(val=ControlType.EDIT) > Loc(LocKey.NAME) + Loc.button() + Loc(
-        LocKey.ID, "I"
-    )
-    LOC_8 = LocType(val=ControlType.EDIT) + LocType(
-        val=ControlType.COMBO_BOX
-    ) + LocType(val=ControlType.BUTTON) > LocType(val=ControlType.EDIT)
+    LOC_1 = Loc.id(" 1 ") + Loc.name("")
+    LOC_2 = Loc.id("ID 4")
+    LOC_3 = Loc.id("ID 1") + Loc.cls("CLASS 2") + Loc.name("NAME 3")
+    LOC_4 = Loc.button() + Loc.cls("CLASS 332") + Loc.name("NAME-4") > Loc.id("_id_")
+    LOC_5 = Loc.combobox()
+    LOC_6 = Loc.button() + Loc.id("U")
+    LOC_7 = Loc.edit() > Loc.name("") + Loc.button() + Loc.id("I ")
+    LOC_8 = Loc.edit() + Loc.combobox() + Loc.button() > Loc.edit()
+    LOC_9 = Loc.offset("3.55")
 
     def __str__(self) -> str:
         return str(self.value)
@@ -92,7 +115,8 @@ class Locator(Enum):
 
 def main() -> None:
     for num, loc in enumerate(Locator, 1):
-        print(f"loc {num} = '{loc}'")
+        if isinstance(loc, Locator):
+            print(f"{num}: '{loc}'")
 
 
 if __name__ == "__main__":

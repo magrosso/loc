@@ -1,0 +1,8 @@
+{
+    "outline.collapseItems": "alwaysCollapse",
+    "search.collapseResults": "alwaysCollapse",
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "notebook.defaultFormatter": "charliermarsh.ruff",
+    "ruff.lineLength": 120
+}
